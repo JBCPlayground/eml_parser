@@ -10,7 +10,8 @@ from .pdf_converter import convert_emails_to_pdf
 from .report import generate_report
 
 
-BASE_DIR = Path("/home/sushisw/eml_parser")
+# Base directory is the parent of the eml_parser package (project root)
+BASE_DIR = Path(__file__).parent.parent.resolve()
 DEFAULT_INPUT_DIR = BASE_DIR / "input"
 DEFAULT_OUTPUT_DIR = BASE_DIR / "output"
 DEFAULT_PROCESSED_DIR = BASE_DIR / "processed"
@@ -22,7 +23,7 @@ DEFAULT_PROCESSED_DIR = BASE_DIR / "processed"
     "-o", "--output-dir",
     type=click.Path(file_okay=False, path_type=Path),
     default=None,
-    help="Output directory for PDFs and report. Defaults to /home/sushisw/eml_parser/output"
+    help="Output directory for PDFs and report. Defaults to <project>/output"
 )
 @click.option(
     "--sentences",
@@ -39,7 +40,7 @@ def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: boo
     """
     Parse EML files, generate summaries, and convert to PDF.
 
-    INPUT_DIR: Directory containing .eml files to process. Defaults to /home/sushisw/eml_parser/input
+    INPUT_DIR: Directory containing .eml files to process. Defaults to <project>/input
     """
     if output_dir is None:
         output_dir = DEFAULT_OUTPUT_DIR
@@ -80,8 +81,17 @@ def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: boo
     for email in emails:
         src = email.filepath
         dst = processed_dir / src.name
+
+        # Handle filename collisions to prevent overwriting
+        counter = 1
+        stem = dst.stem
+        suffix = dst.suffix
+        while dst.exists():
+            dst = processed_dir / f"{stem}_{counter}{suffix}"
+            counter += 1
+
         shutil.move(str(src), str(dst))
-        click.echo(f"  Moved: {src.name}")
+        click.echo(f"  Moved: {src.name} -> {dst.name}")
 
 
 if __name__ == "__main__":

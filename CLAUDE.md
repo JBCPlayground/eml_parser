@@ -9,7 +9,7 @@ EML Parser: A Python CLI tool that processes .eml (email) files from a directory
 ## Directory Structure
 
 ```
-/home/sushisw/eml_parser/
+<project_root>/
 ├── input/      # Drop .eml files here for processing
 ├── output/     # Generated PDFs and summary report
 │   ├── email_summary.html

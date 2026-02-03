@@ -63,6 +63,31 @@ def detect_encoding(filepath: Path) -> str:
         return result.get("encoding") or "utf-8"
 
 
+def is_valid_eml_file(filepath: Path) -> bool:
+    """Validate that a file appears to be a valid email file."""
+    # Check for common email headers in the first 4KB
+    try:
+        with open(filepath, "rb") as f:
+            header = f.read(4096).lower()
+
+        # Look for standard email headers
+        email_indicators = [
+            b"from:",
+            b"to:",
+            b"subject:",
+            b"date:",
+            b"mime-version:",
+            b"content-type:",
+            b"received:",
+        ]
+
+        # File should contain at least 2 email headers to be considered valid
+        matches = sum(1 for indicator in email_indicators if indicator in header)
+        return matches >= 2
+    except (IOError, OSError):
+        return False
+
+
 def parse_eml_file(filepath: Path) -> ParsedEmail:
     """Parse a single .eml file."""
     encoding = detect_encoding(filepath)
@@ -132,6 +157,16 @@ def scan_directory(directory: Path) -> Iterator[ParsedEmail]:
     eml_files = sorted(directory.glob("*.eml"))
 
     for filepath in eml_files:
+        # Skip symlinks to prevent path traversal attacks
+        if filepath.is_symlink():
+            print(f"Warning: Skipping symlink {filepath}")
+            continue
+
+        # Validate file appears to be an email
+        if not is_valid_eml_file(filepath):
+            print(f"Warning: Skipping invalid email file {filepath}")
+            continue
+
         try:
             yield parse_eml_file(filepath)
         except Exception as e:

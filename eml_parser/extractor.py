@@ -1,5 +1,6 @@
 """Extract and clean content from parsed emails."""
 
+import html
 import re
 
 import html2text
@@ -157,12 +158,7 @@ def get_html_for_pdf(email: ParsedEmail) -> str:
 
     # Convert plain text to simple HTML
     if email.plain_body:
-        escaped = (
-            email.plain_body
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
+        escaped = html.escape(email.plain_body)
         paragraphs = escaped.split("\n\n")
         html_paragraphs = "".join(f"<p>{p.replace(chr(10), '<br>')}</p>" for p in paragraphs)
 
@@ -182,8 +178,8 @@ def get_html_for_pdf(email: ParsedEmail) -> str:
     </style>
 </head>
 <body>
-    <h1>{email.subject}</h1>
-    <p><strong>From:</strong> {email.sender}</p>
+    <h1>{html.escape(email.subject)}</h1>
+    <p><strong>From:</strong> {html.escape(email.sender)}</p>
     <p><strong>Date:</strong> {email.date.strftime('%Y-%m-%d %H:%M') if email.date else 'Unknown'}</p>
     <hr>
     {html_paragraphs}

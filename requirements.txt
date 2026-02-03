@@ -1,20 +1,20 @@
 # Email parsing and content extraction
-beautifulsoup4>=4.12.0
-lxml>=5.0.0
-chardet>=5.0.0
+beautifulsoup4>=4.12.0,<5.0.0
+lxml>=5.0.0,<6.0.0
+chardet>=5.0.0,<6.0.0
 
 # PDF generation
-weasyprint>=60.0
-reportlab>=4.0.0
+weasyprint>=60.0,<70.0
+reportlab>=4.0.0,<5.0.0
 
 # HTML/text processing
-html2text>=2024.2.26
-Jinja2>=3.1.0
+html2text>=2024.2.26,<2025.0.0
+Jinja2>=3.1.0,<4.0.0
 
 # Summary generation (extractive summarization)
-sumy>=0.11.0
-nltk>=3.8.0
+sumy>=0.11.0,<1.0.0
+nltk>=3.8.0,<4.0.0
 
 # CLI and utilities
-click>=8.1.0
-python-dateutil>=2.8.0
+click>=8.1.0,<9.0.0
+python-dateutil>=2.8.0,<3.0.0
