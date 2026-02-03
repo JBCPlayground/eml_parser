@@ -1,0 +1,18 @@
+# Virtual environment
+venv/
+
+# Nimbalyst local plans (not checked into version control)
+nimbalyst-local/
+
+# Data directories (user content)
+input/
+output/
+processed/
+
+# Test .eml files in root
+*.eml
+*.eml:*
+
+# Python
+__pycache__/
+*.py[cod]
