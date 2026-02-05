@@ -8,6 +8,7 @@ import click
 from .parser import scan_directory
 from .pdf_converter import convert_emails_to_pdf
 from .report import generate_report
+from .rtf_converter import convert_emails_to_rtf
 
 
 # Base directory is the parent of the eml_parser package (project root)
@@ -64,12 +65,18 @@ def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: boo
         results = convert_emails_to_pdf(emails, pdf_dir)
         pdf_paths = {email.filepath: pdf_path for email, pdf_path in results}
 
+    # Convert to RTF (always runs, even with --skip-pdf)
+    click.echo("\nConverting emails to RTF...")
+    rtf_results = convert_emails_to_rtf(emails, output_dir)
+    click.echo(f"  Converted {len(rtf_results)}/{len(emails)} emails to RTF")
+
     click.echo("\nGenerating summary report...")
     report_path = output_dir / "email_summary.html"
     generate_report(emails, pdf_paths, report_path, sentences)
 
     click.echo(f"\nDone! Output saved to: {output_dir}")
     click.echo(f"  - Summary report: {report_path}")
+    click.echo(f"  - RTFs: {output_dir}")
     if not skip_pdf:
         click.echo(f"  - PDFs: {output_dir / 'pdfs'}")
 

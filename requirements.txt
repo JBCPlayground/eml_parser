@@ -16,6 +16,9 @@ sumy>=0.11.0,<1.0.0
 nltk>=3.8.0,<4.0.0
 numpy>=1.24.0,<3.0.0
 
+# RTF generation
+pypandoc_binary>=1.14
+
 # CLI and utilities
 click>=8.1.0,<9.0.0
 python-dateutil>=2.8.0,<3.0.0
