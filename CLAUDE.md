@@ -35,6 +35,7 @@ python run.py /path/to/eml/directory
 # Run with options
 python run.py -o /custom/output/dir --sentences 5
 python run.py --skip-pdf  # summary report + RTFs only (no PDFs)
+python run.py -v          # enable verbose logging to stderr
 ```
 
 ## Development Setup
@@ -47,20 +48,23 @@ pip install -r requirements.txt
 sudo apt install libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0
 
 # Download NLTK data (required for sumy summarization)
-python -c "import nltk; nltk.download('punkt')"
+python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab')"
 ```
 
 ## Architecture
 
 ```
 eml_parser/
+├── utils.py         # Shared utilities: logging, header HTML builder, filename dedup, file URLs
 ├── parser.py        # EML file parsing, encoding detection, ParsedEmail dataclass
 ├── extractor.py     # Text/HTML extraction, content cleaning for summarization and PDF
 ├── summarizer.py    # LSA-based extractive summarization using sumy
 ├── pdf_converter.py # HTML-to-PDF conversion via weasyprint
 ├── rtf_converter.py # HTML-to-RTF conversion via pypandoc
 ├── report.py        # Jinja2-based HTML summary report generation
-└── cli.py           # Click CLI interface (main entry point)
+├── cli.py           # Click CLI interface (main entry point)
+└── templates/
+    └── report.html  # Jinja2 template for the summary report
 ```
 
 **Data flow**: `scan_directory()` → `ParsedEmail` objects → `get_text_content()` for summarization, `get_html_for_pdf()` for PDF and RTF → `generate_report()` produces final HTML with file:// links.
