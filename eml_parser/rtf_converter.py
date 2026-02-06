@@ -1,39 +1,27 @@
 """Convert emails to RTF format using pypandoc."""
 
-import re
 from pathlib import Path
 
 import pypandoc
 
 from .extractor import get_html_for_pdf
 from .parser import ParsedEmail
+from .utils import (
+    build_email_header_html,
+    deduplicate_path,
+    get_logger,
+    inject_header_into_html,
+)
+
+logger = get_logger(__name__)
 
 
 def inject_email_header(html_content: str, email: ParsedEmail) -> str:
     """Inject email metadata header into HTML before RTF conversion."""
-    date_str = email.date.strftime("%B %d, %Y %I:%M %p") if email.date else "Unknown"
-    recipients = ", ".join(email.recipients) if email.recipients else "Unknown"
-
-    header_html = (
-        "<div>"
-        f"<p><strong>Subject:</strong> {email.subject}</p>"
-        f"<p><strong>From:</strong> {email.sender}</p>"
-        f"<p><strong>To:</strong> {recipients}</p>"
-        f"<p><strong>Date:</strong> {date_str}</p>"
-        "<hr>"
-        "</div>"
+    header_html = build_email_header_html(
+        email.subject, email.sender, email.recipients, email.date, styled=False,
     )
-
-    # Insert after <body> tag if present, otherwise prepend
-    if "<body" in html_content.lower():
-        return re.sub(
-            r'(<body[^>]*>)',
-            rf'\1{header_html}',
-            html_content,
-            count=1,
-            flags=re.IGNORECASE
-        )
-    return header_html + html_content
+    return inject_header_into_html(html_content, header_html)
 
 
 def email_to_rtf(email: ParsedEmail, output_path: Path) -> Path:
@@ -64,18 +52,11 @@ def convert_emails_to_rtf(
     for email in emails:
         try:
             base_name = email.filename_safe_subject
-            filename = base_name
-            counter = 1
-            while filename in used_names or (output_dir / f"{filename}.rtf").exists():
-                filename = f"{base_name}_{counter}"
-                counter += 1
-
-            used_names.add(filename)
-            output_path = output_dir / f"{filename}.rtf"
+            output_path = deduplicate_path(output_dir / f"{base_name}.rtf", used_names)
             email_to_rtf(email, output_path)
             results.append((email, output_path))
-            print(f"  RTF: {output_path.name}")
+            logger.info("RTF: %s", output_path.name)
         except Exception as e:
-            print(f"  Warning: RTF conversion failed for '{email.subject}': {e}")
+            logger.warning("RTF conversion failed for '%s': %s", email.subject, e)
 
     return results

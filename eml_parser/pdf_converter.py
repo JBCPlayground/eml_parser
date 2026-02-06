@@ -8,6 +8,14 @@ from weasyprint.text.fonts import FontConfiguration
 
 from .extractor import get_html_for_pdf
 from .parser import ParsedEmail
+from .utils import (
+    build_email_header_html,
+    deduplicate_path,
+    get_logger,
+    inject_header_into_html,
+)
+
+logger = get_logger(__name__)
 
 
 def sanitize_html_for_pdf(html_content: str) -> str:
@@ -30,25 +38,11 @@ def sanitize_html_for_pdf(html_content: str) -> str:
         html_content = html_content.replace(char, replacement)
 
     # Remove emojis and other high Unicode characters that cause pyphen issues
-    # Keep basic multilingual plane but remove emojis (U+1F300 onwards) and other problematic ranges
-    def replace_problematic(match):
-        char = match.group(0)
-        code = ord(char)
-        # Remove emojis and symbols that cause issues
-        if code > 0xFFFF:  # Outside BMP (emojis, etc.)
-            return ''
-        if 0x2600 <= code <= 0x27BF:  # Misc symbols
-            return ''
-        if 0x1F000 <= code <= 0x1FFFF:  # Emojis
-            return ''
-        return char
-
-    # Process character by character for high Unicode
     result = []
     for char in html_content:
         code = ord(char)
         if code > 0xFFFF:  # Emoji and other supplementary characters
-            continue  # Skip
+            continue
         if 0x2600 <= code <= 0x27BF:  # Misc symbols
             continue
         result.append(char)
@@ -69,26 +63,8 @@ def email_to_pdf(email: ParsedEmail, output_path: Path) -> Path:
     recipients = [sanitize_html_for_pdf(r) for r in email.recipients[:3]]
 
     # Add email header information
-    header_html = f"""
-    <div style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h1 style="margin: 0 0 10px 0; font-size: 18pt;">{subject}</h1>
-        <p style="margin: 5px 0;"><strong>From:</strong> {sender}</p>
-        <p style="margin: 5px 0;"><strong>To:</strong> {', '.join(recipients)}</p>
-        <p style="margin: 5px 0;"><strong>Date:</strong> {email.date.strftime('%B %d, %Y at %H:%M') if email.date else 'Unknown'}</p>
-    </div>
-    """
-
-    # Insert header after body tag
-    if "<body" in html_content.lower():
-        html_content = re.sub(
-            r"(<body[^>]*>)",
-            r"\1" + header_html,
-            html_content,
-            count=1,
-            flags=re.IGNORECASE
-        )
-    else:
-        html_content = f"<html><body>{header_html}{html_content}</body></html>"
+    header_html = build_email_header_html(subject, sender, recipients, email.date, styled=True)
+    html_content = inject_header_into_html(html_content, header_html)
 
     font_config = FontConfiguration()
 
@@ -129,19 +105,13 @@ def convert_emails_to_pdf(emails: list[ParsedEmail], output_dir: Path) -> list[t
     results = []
     for email in emails:
         filename = f"{email.logical_filename}.pdf"
-        output_path = output_dir / filename
-
-        # Handle duplicate filenames
-        counter = 1
-        while output_path.exists():
-            output_path = output_dir / f"{email.logical_filename}_{counter}.pdf"
-            counter += 1
+        output_path = deduplicate_path(output_dir / filename)
 
         try:
             email_to_pdf(email, output_path)
             results.append((email, output_path))
-            print(f"Created: {output_path.name}")
+            logger.info("Created: %s", output_path.name)
         except Exception as e:
-            print(f"Failed to convert {email.filepath.name}: {e}")
+            logger.error("Failed to convert %s: %s", email.filepath.name, e)
 
     return results

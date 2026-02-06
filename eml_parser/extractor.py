@@ -38,18 +38,6 @@ def get_text_content(email: ParsedEmail) -> str:
     return ""
 
 
-def html_to_text(html_content: str) -> str:
-    """Convert HTML content to plain text (preserves links)."""
-    h = html2text.HTML2Text()
-    h.ignore_links = False
-    h.ignore_images = True
-    h.ignore_emphasis = False
-    h.body_width = 0
-
-    text = h.handle(html_content)
-    return clean_text(text)
-
-
 def html_to_text_for_summary(html_content: str) -> str:
     """Convert HTML to plain text optimized for summarization (strips tracking noise)."""
     soup = BeautifulSoup(html_content, "lxml")
@@ -77,19 +65,6 @@ def html_to_text_for_summary(html_content: str) -> str:
 
     text = h.handle(str(soup))
     return clean_text_for_summary(text)
-
-
-def clean_text(text: str) -> str:
-    """Clean and normalize text content."""
-    lines = text.split("\n")
-    cleaned_lines = []
-
-    for line in lines:
-        line = line.strip()
-        if line:
-            cleaned_lines.append(line)
-
-    return "\n".join(cleaned_lines)
 
 
 def clean_text_for_summary(text: str) -> str:
@@ -178,10 +153,6 @@ def get_html_for_pdf(email: ParsedEmail) -> str:
     </style>
 </head>
 <body>
-    <h1>{html.escape(email.subject)}</h1>
-    <p><strong>From:</strong> {html.escape(email.sender)}</p>
-    <p><strong>Date:</strong> {email.date.strftime('%Y-%m-%d %H:%M') if email.date else 'Unknown'}</p>
-    <hr>
     {html_paragraphs}
 </body>
 </html>"""

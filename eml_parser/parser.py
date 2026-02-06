@@ -1,7 +1,6 @@
 """Parse .eml files from a directory."""
 
 import email
-import os
 from dataclasses import dataclass
 from datetime import datetime
 from email.header import decode_header
@@ -10,6 +9,10 @@ from pathlib import Path
 from typing import Iterator
 
 import chardet
+
+from .utils import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -159,15 +162,15 @@ def scan_directory(directory: Path) -> Iterator[ParsedEmail]:
     for filepath in eml_files:
         # Skip symlinks to prevent path traversal attacks
         if filepath.is_symlink():
-            print(f"Warning: Skipping symlink {filepath}")
+            logger.warning("Skipping symlink %s", filepath)
             continue
 
         # Validate file appears to be an email
         if not is_valid_eml_file(filepath):
-            print(f"Warning: Skipping invalid email file {filepath}")
+            logger.warning("Skipping invalid email file %s", filepath)
             continue
 
         try:
             yield parse_eml_file(filepath)
         except Exception as e:
-            print(f"Warning: Failed to parse {filepath}: {e}")
+            logger.warning("Failed to parse %s: %s", filepath, e)

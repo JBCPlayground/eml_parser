@@ -9,6 +9,7 @@ from .parser import scan_directory
 from .pdf_converter import convert_emails_to_pdf
 from .report import generate_report
 from .rtf_converter import convert_emails_to_rtf
+from .utils import configure_logging, deduplicate_path
 
 
 # Base directory is the parent of the eml_parser package (project root)
@@ -37,12 +38,19 @@ DEFAULT_PROCESSED_DIR = BASE_DIR / "processed"
     is_flag=True,
     help="Skip PDF generation, only create summary report"
 )
-def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: bool):
+@click.option(
+    "-v", "--verbose",
+    is_flag=True,
+    help="Enable verbose logging output"
+)
+def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: bool, verbose: bool):
     """
     Parse EML files, generate summaries, and convert to PDF.
 
     INPUT_DIR: Directory containing .eml files to process. Defaults to <project>/input
     """
+    configure_logging(verbose)
+
     if output_dir is None:
         output_dir = DEFAULT_OUTPUT_DIR
 
@@ -87,16 +95,7 @@ def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: boo
     click.echo(f"\nMoving processed files to: {processed_dir}")
     for email in emails:
         src = email.filepath
-        dst = processed_dir / src.name
-
-        # Handle filename collisions to prevent overwriting
-        counter = 1
-        stem = dst.stem
-        suffix = dst.suffix
-        while dst.exists():
-            dst = processed_dir / f"{stem}_{counter}{suffix}"
-            counter += 1
-
+        dst = deduplicate_path(processed_dir / src.name)
         shutil.move(str(src), str(dst))
         click.echo(f"  Moved: {src.name} -> {dst.name}")
 
