@@ -1,6 +1,5 @@
 """Export emails to a Notion database."""
 
-from datetime import datetime
 from pathlib import Path
 
 import click
@@ -128,7 +127,7 @@ def _build_page_properties(email: ParsedEmail, key_points: list[str], *, pdf_upl
             "files": [{
                 "type": "file_upload",
                 "file_upload": {"id": pdf_upload_id},
-                "name": f"{email.logical_filename}.pdf",
+                "name": f"{email.logical_filename[:96]}.pdf",
             }]
         }
 
