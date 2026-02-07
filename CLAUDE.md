@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-EML Parser: A Python CLI tool that processes .eml (email) files from a directory, generates a summary report with key points and clickable links to source emails, and converts each email to PDF and editable RTF formats.
+EML Parser: A Python CLI tool that processes .eml (email) files from a directory, generates a summary report with key points and clickable links to source emails, converts each email to PDF and editable RTF formats, and optionally exports to a Notion database with PDF attachments.
 
 ## Directory Structure
 
@@ -72,7 +72,7 @@ eml_parser/
     └── report.html  # Jinja2 template for the summary report
 ```
 
-**Data flow**: `scan_directory()` → `ParsedEmail` objects → `get_text_content()` for summarization, `get_html_for_pdf()` for PDF and RTF → `generate_report()` produces final HTML with file:// links.
+**Data flow**: `scan_directory()` → `ParsedEmail` objects → `get_text_content()` for summarization, `get_html_for_pdf()` for PDF and RTF → `generate_report()` produces final HTML with file:// links. Notion export uploads PDFs via `file_uploads` API and attaches them to database rows.
 
 ## Key Dependencies
 
@@ -81,7 +81,8 @@ eml_parser/
 - **RTF generation**: `pypandoc_binary` (HTML-to-RTF via bundled Pandoc)
 - **Summarization**: `sumy` with NLTK for extractive key point extraction (LSA algorithm)
 - **CLI**: `click` for command-line interface
-- **Notion export** (optional): `notion-client` for database integration
+- **Notion export** (optional): `notion-client` for database integration (uses `data_sources` and `file_uploads` APIs)
+- **Environment**: `python-dotenv` for `.env` file support
 - **Templates**: `Jinja2` for generating the summary report
 
 ## Notion Integration Setup
@@ -91,3 +92,5 @@ eml_parser/
 3. Install the client: `pip install notion-client`
 4. Create a database: `python run.py --notion-setup <PAGE_ID> --notion-token <TOKEN>`
 5. Export emails: `NOTION_TOKEN=<token> NOTION_DATABASE_ID=<db_id> python run.py --notion`
+
+Database schema: Name (title), Sender, Recipients, Date, Key Points, Status (select), PDF (files). PDFs are uploaded via the `file_uploads` API and attached to each row. Use `--skip-pdf` to export without PDF attachments. Credentials can be set via `.env` file or environment variables.
