@@ -37,9 +37,11 @@ python run.py -o /custom/output/dir --sentences 5
 python run.py --skip-pdf  # summary report + RTFs only (no PDFs)
 python run.py -v          # enable verbose logging to stderr
 
-# Notion integration
+# Notion integration (credentials via .env, env vars, or CLI flags)
 python run.py --notion-setup PAGE_ID --notion-token TOKEN  # create database
-python run.py --notion                                      # export to Notion (requires env vars)
+python run.py --notion                                      # export to Notion (with PDF attachments)
+python run.py --notion --skip-pdf                           # export without PDF attachments
+python run.py --notion --notion-no-dedup                    # export without duplicate detection
 ```
 
 ## Development Setup

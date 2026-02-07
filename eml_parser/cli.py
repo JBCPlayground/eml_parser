@@ -40,7 +40,7 @@ DEFAULT_PROCESSED_DIR = BASE_DIR / "processed"
 @click.option(
     "--skip-pdf",
     is_flag=True,
-    help="Skip PDF generation, only create summary report"
+    help="Skip PDF generation (summary report and RTFs still created)"
 )
 @click.option(
     "-v", "--verbose",
