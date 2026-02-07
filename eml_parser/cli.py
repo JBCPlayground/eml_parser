@@ -153,6 +153,7 @@ def main(
                 notion_token,
                 sentences,
                 skip_duplicates=not notion_no_dedup,
+                pdf_paths=pdf_paths or None,
             )
             click.echo(f"  Exported {len(notion_results)}/{len(emails)} emails to Notion")
         except click.ClickException:
