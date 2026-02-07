@@ -9,6 +9,7 @@ from .parser import scan_directory
 from .pdf_converter import convert_emails_to_pdf
 from .report import generate_report
 from .rtf_converter import convert_emails_to_rtf
+from .notion_export import export_emails_to_notion, setup_notion_database
 from .utils import configure_logging, deduplicate_path
 
 
@@ -43,13 +44,74 @@ DEFAULT_PROCESSED_DIR = BASE_DIR / "processed"
     is_flag=True,
     help="Enable verbose logging output"
 )
-def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: bool, verbose: bool):
+@click.option(
+    "--notion",
+    is_flag=True,
+    help="Export emails to a Notion database"
+)
+@click.option(
+    "--notion-token",
+    envvar="NOTION_TOKEN",
+    default=None,
+    help="Notion API integration token (or set NOTION_TOKEN env var)"
+)
+@click.option(
+    "--notion-database-id",
+    envvar="NOTION_DATABASE_ID",
+    default=None,
+    help="Target Notion database ID (or set NOTION_DATABASE_ID env var)"
+)
+@click.option(
+    "--notion-no-dedup",
+    is_flag=True,
+    help="Skip duplicate detection when exporting to Notion"
+)
+@click.option(
+    "--notion-setup",
+    default=None,
+    metavar="PAGE_ID",
+    help="Create a Notion database under this page, then exit"
+)
+def main(
+    input_dir: Path,
+    output_dir: Path | None,
+    sentences: int,
+    skip_pdf: bool,
+    verbose: bool,
+    notion: bool,
+    notion_token: str | None,
+    notion_database_id: str | None,
+    notion_no_dedup: bool,
+    notion_setup: str | None,
+):
     """
     Parse EML files, generate summaries, and convert to PDF.
 
     INPUT_DIR: Directory containing .eml files to process. Defaults to <project>/input
     """
     configure_logging(verbose)
+
+    # --- Notion early validation ---
+    if notion_setup:
+        if not notion_token:
+            raise click.ClickException(
+                "Notion token is required. Set NOTION_TOKEN or use --notion-token."
+            )
+        click.echo("Creating Notion database...")
+        db_id = setup_notion_database(notion_token, notion_setup)
+        click.echo(f"Database created! ID: {db_id}")
+        click.echo(f"\nExport emails with:")
+        click.echo(f"  NOTION_TOKEN=<token> NOTION_DATABASE_ID={db_id} python run.py --notion")
+        return
+
+    if notion and not notion_token:
+        raise click.ClickException(
+            "Notion token is required. Set NOTION_TOKEN or use --notion-token."
+        )
+    if notion and not notion_database_id:
+        raise click.ClickException(
+            "Notion database ID is required. Set NOTION_DATABASE_ID or use --notion-database-id."
+        )
 
     if output_dir is None:
         output_dir = DEFAULT_OUTPUT_DIR
@@ -77,6 +139,23 @@ def main(input_dir: Path, output_dir: Path | None, sentences: int, skip_pdf: boo
     click.echo("\nConverting emails to RTF...")
     rtf_results = convert_emails_to_rtf(emails, output_dir)
     click.echo(f"  Converted {len(rtf_results)}/{len(emails)} emails to RTF")
+
+    # Export to Notion (optional)
+    if notion:
+        click.echo("\nExporting to Notion...")
+        try:
+            notion_results = export_emails_to_notion(
+                emails,
+                notion_database_id,
+                notion_token,
+                sentences,
+                skip_duplicates=not notion_no_dedup,
+            )
+            click.echo(f"  Exported {len(notion_results)}/{len(emails)} emails to Notion")
+        except click.ClickException:
+            raise
+        except Exception as e:
+            click.echo(f"  Notion export failed: {e}", err=True)
 
     click.echo("\nGenerating summary report...")
     report_path = output_dir / "email_summary.html"
