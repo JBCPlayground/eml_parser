@@ -22,6 +22,7 @@ pypandoc_binary>=1.14
 # CLI and utilities
 click>=8.1.0,<9.0.0
 python-dateutil>=2.8.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
 
 # Notion database export (optional, install with: pip install notion-client)
 # notion-client>=2.0.0,<3.0.0

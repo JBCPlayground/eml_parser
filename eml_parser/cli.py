@@ -4,6 +4,9 @@ import shutil
 from pathlib import Path
 
 import click
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from .parser import scan_directory
 from .pdf_converter import convert_emails_to_pdf
