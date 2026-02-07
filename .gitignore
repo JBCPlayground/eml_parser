@@ -13,6 +13,9 @@ processed/
 *.eml
 *.eml:*
 
+# Environment variables
+.env
+
 # Python
 __pycache__/
 *.py[cod]
